@@ -111,7 +111,7 @@
   const PREP = {k:'prep', label:'Décompte départ', min:0, max:30, step:5, def:10, unit:'s'};
   const MODES = {
     clock:   {label:'HORLOGE', fields:[]},
-    fortime: {label:'FOR TIME', fields:[{k:'cap',label:'Time cap (min, 0 = aucun)',min:0,max:99,step:1,def:0}, PREP]},
+    fortime: {label:'FOR TIME', fields:[{k:'capS',label:'Time cap',min:0,max:5940,step:15,def:0,unit:'s',zero:'AUCUN'}, PREP]},
     amrap:   {label:'AMRAP', fields:[{k:'dur',label:'Durée',min:15,max:5940,step:15,def:720,unit:'s'}, PREP]},
     emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:15,max:600,step:15,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
     tabata:  {label:'TABATA', fields:[{k:'work',label:'Travail',min:5,max:600,step:5,def:20,unit:'s'},{k:'rest',label:'Repos',min:0,max:600,step:5,def:10,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:8}, PREP]},
@@ -208,7 +208,7 @@
   function buildSegs(){
     const c = cfg[S.mode], segs = [];
     if (c.prep > 0) segs.push({type:'prep', dur:c.prep*1000, dir:'down'});
-    if (S.mode==='fortime') segs.push({type:'work', dur: c.cap>0 ? c.cap*60000 : Infinity, dir:'up'});
+    if (S.mode==='fortime') segs.push({type:'work', dur: c.capS>0 ? c.capS*1000 : Infinity, dir:'up'});
     if (S.mode==='amrap')   segs.push({type:'work', dur: c.dur*1000, dir:'down'});
     if (S.mode==='emom')    for (let r=1;r<=c.rounds;r++) segs.push({type:'work', dur:c.every*1000, dir:'down', round:r});
     if (S.mode==='tabata')  for (let r=1;r<=c.rounds;r++){ segs.push({type:'work', dur:c.work*1000, dir:'down', round:r}); if (c.rest>0 && r<c.rounds) segs.push({type:'rest', dur:c.rest*1000, dir:'down', round:r}); }
@@ -257,7 +257,7 @@
     else if (S.mode==='emom') l = 'EMOM';
     lbl.textContent = l;
     status.textContent = S.finished ? 'FIN' : (S.started && !S.running) ? 'PAUSE' : v.s.type==='prep' ? ''
-      : (S.mode==='emom' || S.mode==='tabata') ? `${v.s.round||0}/${c.rounds}` : (S.mode==='fortime' && c.cap>0) ? `CAP ${c.cap}'` : '';
+      : (S.mode==='emom' || S.mode==='tabata') ? `${v.s.round||0}/${c.rounds}` : (S.mode==='fortime' && c.capS>0) ? `CAP ${Math.floor(c.capS/60)}:${p2(c.capS%60)}` : '';
     hint.textContent = (S.started && S.running && (S.mode==='amrap'||S.mode==='fortime')) ? 'Touchez l’afficheur pour compter un round' : '';
     startBtn.textContent = !S.started ? 'START' : S.finished ? 'NOUVEAU' : S.running ? (S.mode==='fortime' ? 'STOP' : 'PAUSE') : 'REPRENDRE';
     startBtn.classList.toggle('pause', S.started && S.running);
@@ -327,7 +327,7 @@
 
   // ---------- Tabs & settings UI ----------
   const tabs = document.getElementById('tabs'), settings = document.getElementById('settings');
-  function fmtVal(f, v){ if (f.unit==='s'){ return v>=60 ? `${Math.floor(v/60)}:${p2(v%60)}` : `${v}s`; } return String(v); }
+  function fmtVal(f, v){ if (v===0 && f.zero) return f.zero; if (f.unit==='s'){ return v>=60 ? `${Math.floor(v/60)}:${p2(v%60)}` : `${v}s`; } return String(v); }
   function buildTabs(){
     tabs.innerHTML = '';
     for (const m of ORDER){
