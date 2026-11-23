@@ -111,9 +111,9 @@
   const PREP = {k:'prep', label:'Décompte départ', min:0, max:30, step:5, def:10, unit:'s'};
   const MODES = {
     clock:   {label:'HORLOGE', fields:[]},
-    fortime: {label:'FOR TIME', fields:[{k:'capS',label:'Time cap',min:0,max:5940,step:15,def:0,unit:'s',zero:'AUCUN'}, PREP]},
-    amrap:   {label:'AMRAP', fields:[{k:'dur',label:'Durée',min:15,max:5940,step:15,def:720,unit:'s'}, PREP]},
-    emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:15,max:600,step:15,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
+    fortime: {label:'FOR TIME', fields:[{k:'capS',label:'Time cap',min:0,max:5940,step:10,def:0,unit:'s',zero:'AUCUN'}, PREP]},
+    amrap:   {label:'AMRAP', fields:[{k:'dur',label:'Durée',min:10,max:5940,step:10,def:720,unit:'s'}, PREP]},
+    emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:10,max:600,step:10,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
     tabata:  {label:'TABATA', fields:[{k:'work',label:'Travail',min:5,max:600,step:5,def:20,unit:'s'},{k:'rest',label:'Repos',min:0,max:600,step:5,def:10,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:8}, PREP]},
   };
   const ORDER = ['clock','fortime','amrap','emom','tabata'];
