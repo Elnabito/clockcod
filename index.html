@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Clockcod – WOD Timer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#ff2414; --red-off:#2a0705; --red-glow:rgba(255,40,20,.85);
+    --green:#27ff4e; --green-off:#062009; --green-glow:rgba(40,255,80,.8);
+    --amber:#ffb000;
+    --dw:min(12.5vw, 24vh);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#000;color:#ddd;font-family:'Share Tech Mono',ui-monospace,monospace;overflow:hidden;user-select:none;-webkit-user-select:none}
+  #app{display:flex;flex-direction:column;height:100%;padding:10px;gap:10px}
+
+  /* Mode tabs */
+  #tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  #tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1 0 auto;background:#111;border:1px solid #2a2a2a;color:#888;padding:10px 12px;border-radius:8px;font:inherit;font-size:14px;letter-spacing:.08em}
+  .tab.active{color:#fff;border-color:var(--red);background:#1a0503;box-shadow:0 0 10px rgba(255,36,20,.35) inset}
+
+  /* Stage */
+  #stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+  .housing{position:relative;width:100%;max-width:1400px;background:linear-gradient(180deg,#1d1d1d,#0b0b0b);border:1px solid #333;border-radius:16px;padding:calc(var(--dw)*.18) calc(var(--dw)*.22) calc(var(--dw)*.14);box-shadow:0 10px 40px rgba(0,0,0,.8), inset 0 1px 0 #3a3a3a}
+  .screw{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#777,#222);box-shadow:inset 0 0 2px #000}
+  .screw.tl{top:8px;left:8px}.screw.tr{top:8px;right:8px}.screw.bl{bottom:8px;left:8px}.screw.br{bottom:8px;right:8px}
+  .labelrow{display:flex;justify-content:space-between;align-items:baseline;color:var(--red);font-size:calc(var(--dw)*.2);letter-spacing:.15em;padding:0 4px 6px;text-shadow:0 0 8px var(--red-glow);min-height:1.4em}
+  #status{color:#a33;text-shadow:none}
+  .screen{background:radial-gradient(ellipse at center,#0d0101 0%,#030000 70%);border-radius:8px;border:1px solid #1a0000;box-shadow:inset 0 0 30px #000;padding:calc(var(--dw)*.14) calc(var(--dw)*.12);display:flex;align-items:center;justify-content:center;gap:calc(var(--dw)*.06);cursor:pointer}
+  .digit{overflow:visible;width:var(--dw);height:calc(var(--dw)*1.62);display:block}
+  .sep{overflow:visible;width:calc(var(--dw)*.32);height:calc(var(--dw)*1.62);display:block}
+  .seg,.dot{fill:var(--red-off);transition:fill .05s}
+  .seg.on,.dot.on{fill:var(--red);filter:drop-shadow(0 0 3px var(--red-glow)) drop-shadow(0 0 10px rgba(255,30,10,.45))}
+  .screen.rest .seg,.screen.rest .dot{fill:var(--green-off)}
+  .screen.rest .seg.on,.screen.rest .dot.on{fill:var(--green);filter:drop-shadow(0 0 3px var(--green-glow)) drop-shadow(0 0 10px rgba(30,255,60,.4))}
+  .screen.blink .on{animation:blink 1s steps(2,start) infinite}
+  @keyframes blink{50%{fill-opacity:.08;filter:none}}
+  .brand{text-align:center;color:#555;font-size:calc(var(--dw)*.13);letter-spacing:.5em;padding-top:8px}
+  #hint{color:#666;font-size:13px;text-align:center;min-height:1em}
+
+  /* Settings */
+  #settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+  .field{display:flex;align-items:center;justify-content:space-between;background:#0e0e0e;border:1px solid #222;border-radius:10px;padding:6px 8px 6px 12px;gap:8px}
+  .field label{font-size:13px;color:#999}
+  .stepper{display:flex;align-items:center;gap:6px}
+  .stepper button{width:40px;height:40px;border-radius:8px;border:1px solid #333;background:#181818;color:#eee;font:inherit;font-size:22px}
+  .stepper button:active{background:#2a0a07}
+  .stepper .val{min-width:56px;text-align:center;color:var(--red);font-size:20px;text-shadow:0 0 6px var(--red-glow)}
+
+  /* Controls */
+  #controls{display:flex;gap:8px;align-items:stretch}
+  .btn{font:inherit;letter-spacing:.1em;border-radius:12px;border:1px solid #333;background:#151515;color:#ddd;font-size:16px;padding:14px 10px}
+  .btn:active{transform:translateY(1px)}
+  #startBtn{flex:2;background:linear-gradient(180deg,#d61a0c,#8e0d04);border-color:#ff4433;color:#fff;font-size:20px}
+  #startBtn.pause{background:linear-gradient(180deg,#3a3a3a,#1e1e1e);border-color:#555}
+  #resetBtn,#minusBtn{flex:1}
+  .icon{flex:0 0 52px;font-size:20px;padding:0}
+
+  body.started #tabs, body.started #settings{display:none}
+  body.started{--dw:min(13.2vw, 40vh)}
+  body.clock #startBtn, body.clock #resetBtn, body.clock #minusBtn, body.clock #settings{display:none}
+  body.clock{--dw:min(13.2vw, 40vh)}
+  #minusBtn{display:none}
+  body.counting #minusBtn{display:block}
+  @media (orientation:landscape) and (max-height:500px){
+    #app{padding:6px;gap:6px}
+    .tab{padding:6px 10px}
+    .btn{padding:8px}
+    body.started .brand{display:none}
+    body.started{--dw:min(13.2vw, 52vh)}
+    body.clock{--dw:min(13.2vw, 52vh)}
+    #settings{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="tabs"></nav>
+  <main id="stage">
+    <div class="housing">
+      <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
+      <div class="labelrow"><span id="lbl">AMRAP</span><span id="status"></span></div>
+      <div class="screen" id="screen"></div>
+      <div class="brand">CLOCKCOD</div>
+    </div>
+  </main>
+  <div id="hint"></div>
+  <section id="settings"></section>
+  <footer id="controls">
+    <button class="btn" id="minusBtn">−1 RND</button>
+    <button class="btn" id="startBtn">START</button>
+    <button class="btn" id="resetBtn">RESET</button>
+    <button class="btn icon" id="soundBtn" title="Son">🔊</button>
+    <button class="btn icon" id="fsBtn" title="Plein écran">⛶</button>
+  </footer>
+</div>
+
+<script>
+(() => {
+  // ---------- Modes & settings ----------
+  const PREP = {k:'prep', label:'Décompte départ', min:0, max:30, step:5, def:10, unit:'s'};
+  const MODES = {
+    clock:   {label:'HORLOGE', fields:[]},
+    fortime: {label:'FOR TIME', fields:[{k:'cap',label:'Time cap (min, 0 = aucun)',min:0,max:99,step:1,def:0}, PREP]},
+    amrap:   {label:'AMRAP', fields:[{k:'min',label:'Durée (min)',min:1,max:99,step:1,def:12}, PREP]},
+    emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:10,max:600,step:10,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
+    tabata:  {label:'TABATA', fields:[{k:'work',label:'Travail',min:5,max:600,step:5,def:20,unit:'s'},{k:'rest',label:'Repos',min:0,max:600,step:5,def:10,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:8}, PREP]},
+  };
+  const ORDER = ['clock','fortime','amrap','emom','tabata'];
+
+  const store = {
+    get(){ try{ return JSON.parse(localStorage.getItem('clockcod')||'{}'); }catch(e){ return {}; } },
+    set(v){ try{ localStorage.setItem('clockcod', JSON.stringify(v)); }catch(e){} }
+  };
+  const saved = store.get();
+  const cfg = {};
+  for (const m of ORDER){ cfg[m] = {}; for (const f of MODES[m].fields){ const v = saved.cfg && saved.cfg[m] && saved.cfg[m][f.k]; cfg[m][f.k] = (typeof v === 'number') ? v : f.def; } }
+
+  const S = {
+    mode: MODES[saved.mode] ? saved.mode : 'amrap',
+    sound: saved.sound !== false,
+    segs: [], started:false, running:false, finished:false,
+    elapsed:0, lastTs:0, lastSeg:-1, lastBeepSec:null, rounds:0
+  };
+  const persist = () => store.set({mode:S.mode, cfg, sound:S.sound});
+
+  // ---------- 7-segment display ----------
+  const SEGS = {
+    a:'14,4 46,4 40,12 20,12',
+    b:'50,8 50,44 46,48 42,44 42,16',
+    c:'50,56 50,92 42,84 42,56 46,52',
+    d:'20,88 40,88 46,96 14,96',
+    e:'10,56 14,52 18,56 18,84 10,92',
+    f:'10,8 18,16 18,44 14,48 10,44',
+    g:'18,46 42,46 46,50 42,54 18,54 14,50'
+  };
+  const MAP = {'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcdfg','-':'g',' ':''};
+  const NS = 'http://www.w3.org/2000/svg';
+  const screen = document.getElementById('screen');
+  const digits = [], seps = [];
+
+  function makeDigit(){
+    const svg = document.createElementNS(NS,'svg');
+    svg.setAttribute('viewBox','0 0 60 100'); svg.setAttribute('class','digit');
+    const g = document.createElementNS(NS,'g'); g.setAttribute('transform','skewX(-5) translate(5 0)');
+    const parts = {};
+    for (const k in SEGS){ const p = document.createElementNS(NS,'polygon'); p.setAttribute('points',SEGS[k]); p.setAttribute('class','seg'); g.appendChild(p); parts[k]=p; }
+    svg.appendChild(g); screen.appendChild(svg);
+    return {parts, cur:null};
+  }
+  function makeSep(){
+    const svg = document.createElementNS(NS,'svg');
+    svg.setAttribute('viewBox','0 0 20 100'); svg.setAttribute('class','sep');
+    const dots = [32,68].map(y => { const c = document.createElementNS(NS,'circle'); c.setAttribute('cx', 10 - (y-50)*0.09); c.setAttribute('cy',y); c.setAttribute('r',5); c.setAttribute('class','dot'); svg.appendChild(c); return c; });
+    screen.appendChild(svg);
+    return {dots, cur:null};
+  }
+  // layout: [d0 d1] : [d2 d3] : [d4 d5]
+  digits.push(makeDigit(), makeDigit()); seps.push(makeSep());
+  digits.push(makeDigit(), makeDigit()); seps.push(makeSep());
+  digits.push(makeDigit(), makeDigit());
+
+  function setDigit(d, ch){
+    if (d.cur === ch) return; d.cur = ch;
+    const on = MAP[ch] || '';
+    for (const k in d.parts) d.parts[k].classList.toggle('on', on.includes(k));
+  }
+  function setSep(s, on){ if (s.cur === on) return; s.cur = on; s.dots.forEach(c => c.classList.toggle('on', on)); }
+  function show(str, sep1, sep2){ for (let i=0;i<6;i++) setDigit(digits[i], str[i]); setSep(seps[0], sep1); setSep(seps[1], sep2); }
+  const p2 = n => String(n).padStart(2,'0');
+
+  // ---------- Audio ----------
+  let ac = null;
+  function ensureAudio(){ try{ if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)(); if (ac.state==='suspended') ac.resume(); }catch(e){} }
+  function tone(f, d, when=0, vol=0.45){
+    if (!ac || !S.sound) return;
+    try{
+      const t0 = ac.currentTime + when, o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0+0.005);
+      g.gain.setValueAtTime(vol, t0+d-0.02); g.gain.linearRampToValueAtTime(0, t0+d);
+      o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0+d+0.02);
+    }catch(e){}
+  }
+  const beepShort = () => tone(880, .18);
+  const beepGo    = () => tone(1320, .7);
+  const beepRest  = () => tone(620, .7);
+  const beepEnd   = () => { tone(1320,.3,0); tone(1320,.3,.45); tone(1320,1.0,.9); };
+  const click     = () => tone(1760, .04, 0, .25);
+
+  // ---------- Wake lock ----------
+  let wl = null;
+  async function lockScreen(){ try{ if ('wakeLock' in navigator) wl = await navigator.wakeLock.request('screen'); }catch(e){} }
+  function unlockScreen(){ try{ wl && wl.release(); }catch(e){} wl = null; }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible' && S.running) lockScreen(); });
+
+  // ---------- Schedule ----------
+  function buildSegs(){
+    const c = cfg[S.mode], segs = [];
+    if (c.prep > 0) segs.push({type:'prep', dur:c.prep*1000, dir:'down'});
+    if (S.mode==='fortime') segs.push({type:'work', dur: c.cap>0 ? c.cap*60000 : Infinity, dir:'up'});
+    if (S.mode==='amrap')   segs.push({type:'work', dur: c.min*60000, dir:'down'});
+    if (S.mode==='emom')    for (let r=1;r<=c.rounds;r++) segs.push({type:'work', dur:c.every*1000, dir:'down', round:r});
+    if (S.mode==='tabata')  for (let r=1;r<=c.rounds;r++){ segs.push({type:'work', dur:c.work*1000, dir:'down', round:r}); if (c.rest>0 && r<c.rounds) segs.push({type:'rest', dur:c.rest*1000, dir:'down', round:r}); }
+    return segs;
+  }
+  function viewAt(el){
+    let acc = 0;
+    for (let i=0;i<S.segs.length;i++){ const s = S.segs[i]; if (el < acc + s.dur) return {i, s, t: el-acc}; acc += s.dur; }
+    const i = S.segs.length-1; return {i, s:S.segs[i], t:S.segs[i].dur, done:true};
+  }
+  const secsOf = v => v.s.dir==='down' ? Math.max(0, Math.ceil((v.s.dur - v.t)/1000 - 1e-6)) : Math.floor(v.t/1000);
+
+  // ---------- Render ----------
+  const lbl = document.getElementById('lbl'), status = document.getElementById('status'), hint = document.getElementById('hint');
+  const startBtn = document.getElementById('startBtn');
+
+  function render(){
+    document.body.classList.toggle('clock', S.mode==='clock');
+    document.body.classList.toggle('started', S.started);
+    document.body.classList.toggle('counting', S.started && (S.mode==='amrap' || S.mode==='fortime'));
+    if (S.mode==='clock'){
+      const d = new Date();
+      show(p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds()), true, true);
+      screen.classList.remove('rest','blink');
+      lbl.textContent = 'HORLOGE'; status.textContent = ''; hint.textContent = '';
+      return;
+    }
+    let v;
+    if (!S.started){ const segs = buildSegs(); const i = segs.findIndex(s => s.type!=='prep'); v = {i, s:segs[i], t:0}; }
+    else v = viewAt(S.elapsed);
+    const secs = secsOf(v);
+    const mm = Math.min(99, Math.floor(secs/60)), ss = secs%60;
+    let left = '  ';
+    if (v.s.type!=='prep'){
+      if (v.s.round) left = p2(v.s.round);
+      else if (S.rounds > 0) left = p2(Math.min(99,S.rounds));
+    }
+    show(left + p2(mm) + p2(ss), false, true);
+    screen.classList.toggle('rest', v.s.type==='rest');
+    screen.classList.toggle('blink', S.finished || (S.started && !S.running));
+
+    const c = cfg[S.mode];
+    let l = MODES[S.mode].label;
+    if (v.s.type==='prep') l = 'PRÊT ?';
+    else if (S.mode==='tabata') l = v.s.type==='rest' ? 'TABATA · REPOS' : 'TABATA · GO';
+    else if (S.mode==='emom') l = 'EMOM';
+    lbl.textContent = l;
+    status.textContent = S.finished ? 'FIN' : (S.started && !S.running) ? 'PAUSE' : v.s.type==='prep' ? ''
+      : (S.mode==='emom' || S.mode==='tabata') ? `${v.s.round||0}/${c.rounds}` : (S.mode==='fortime' && c.cap>0) ? `CAP ${c.cap}'` : '';
+    hint.textContent = (S.started && S.running && (S.mode==='amrap'||S.mode==='fortime')) ? 'Touchez l’afficheur pour compter un round' : '';
+    startBtn.textContent = !S.started ? 'START' : S.finished ? 'NOUVEAU' : S.running ? (S.mode==='fortime' ? 'STOP' : 'PAUSE') : 'REPRENDRE';
+    startBtn.classList.toggle('pause', S.started && S.running);
+  }
+
+  // ---------- Loop ----------
+  function tick(){
+    if (S.running){
+      const now = performance.now(); S.elapsed += now - S.lastTs; S.lastTs = now;
+      const v = viewAt(S.elapsed);
+      if (v.done){ finish(); }
+      else {
+        if (v.i !== S.lastSeg){
+          S.lastSeg = v.i; S.lastBeepSec = null;
+          if (v.s.type==='work') beepGo(); else if (v.s.type==='rest') beepRest();
+        }
+        if (v.s.dir==='down'){
+          const secs = secsOf(v);
+          if (secs>=1 && secs<=3 && S.lastBeepSec!==secs && (v.s.dur - v.t) < secs*1000){ S.lastBeepSec = secs; beepShort(); }
+        }
+      }
+    }
+    render();
+  }
+  setInterval(tick, 100);
+
+  function finish(){
+    const total = S.segs.reduce((a,s)=>a+s.dur,0);
+    if (isFinite(total)) S.elapsed = total;
+    S.running = false; S.finished = true; beepEnd(); unlockScreen();
+  }
+  function reset(){ S.started=false; S.running=false; S.finished=false; S.elapsed=0; S.lastSeg=-1; S.lastBeepSec=null; S.rounds=0; unlockScreen(); render(); }
+
+  // ---------- Controls ----------
+  startBtn.addEventListener('click', () => {
+    ensureAudio();
+    if (S.finished){ reset(); return; }
+    if (!S.started){
+      S.segs = buildSegs(); S.started = true; S.elapsed = 0; S.lastSeg = -1; S.rounds = 0;
+      S.running = true; S.lastTs = performance.now(); lockScreen();
+    } else if (S.running){
+      S.running = false; unlockScreen();
+    } else {
+      S.running = true; S.lastTs = performance.now(); lockScreen();
+    }
+    render();
+  });
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('minusBtn').addEventListener('click', () => { if (S.rounds>0){ S.rounds--; click(); render(); } });
+  screen.addEventListener('click', () => {
+    ensureAudio();
+    if (S.started && S.running && (S.mode==='amrap'||S.mode==='fortime')){
+      const v = viewAt(S.elapsed);
+      if (v.s.type!=='prep'){ S.rounds++; click(); render(); }
+    }
+  });
+  const soundBtn = document.getElementById('soundBtn');
+  const paintSound = () => soundBtn.textContent = S.sound ? '🔊' : '🔇';
+  soundBtn.addEventListener('click', () => { S.sound = !S.sound; ensureAudio(); paintSound(); persist(); if (S.sound) click(); });
+  paintSound();
+  document.getElementById('fsBtn').addEventListener('click', async () => {
+    try{
+      if (!document.fullscreenElement) { await document.documentElement.requestFullscreen(); try{ await screen.orientation.lock('landscape'); }catch(e){} }
+      else await document.exitFullscreen();
+    }catch(e){}
+  });
+
+  // ---------- Tabs & settings UI ----------
+  const tabs = document.getElementById('tabs'), settings = document.getElementById('settings');
+  function fmtVal(f, v){ if (f.unit==='s'){ return v>=60 ? `${Math.floor(v/60)}:${p2(v%60)}` : `${v}s`; } return String(v); }
+  function buildTabs(){
+    tabs.innerHTML = '';
+    for (const m of ORDER){
+      const b = document.createElement('button'); b.className = 'tab' + (m===S.mode?' active':''); b.textContent = MODES[m].label;
+      b.addEventListener('click', () => { if (S.started) return; S.mode = m; persist(); buildTabs(); buildSettings(); reset(); });
+      tabs.appendChild(b);
+    }
+  }
+  function buildSettings(){
+    settings.innerHTML = '';
+    for (const f of MODES[S.mode].fields){
+      const row = document.createElement('div'); row.className='field';
+      row.innerHTML = `<label>${f.label}</label><div class="stepper"><button aria-label="moins">−</button><span class="val"></span><button aria-label="plus">+</button></div>`;
+      const [minus, plus] = row.querySelectorAll('button'), val = row.querySelector('.val');
+      const paint = () => val.textContent = fmtVal(f, cfg[S.mode][f.k]);
+      const change = d => { const n = Math.min(f.max, Math.max(f.min, cfg[S.mode][f.k] + d*f.step)); cfg[S.mode][f.k] = n; paint(); persist(); render(); };
+      let rep;
+      const hold = (d) => { change(d); let delay = 400; const go = () => { rep = setTimeout(() => { change(d); delay = Math.max(60, delay*0.75); go(); }, delay); }; go(); };
+      const stop = () => clearTimeout(rep);
+      for (const [btn,d] of [[minus,-1],[plus,1]]){
+        btn.addEventListener('pointerdown', e => { e.preventDefault(); hold(d); });
+        ['pointerup','pointerleave','pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+      }
+      paint(); settings.appendChild(row);
+    }
+  }
+  buildTabs(); buildSettings(); render();
+})();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>
