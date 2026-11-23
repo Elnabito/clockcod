@@ -112,8 +112,8 @@
   const MODES = {
     clock:   {label:'HORLOGE', fields:[]},
     fortime: {label:'FOR TIME', fields:[{k:'cap',label:'Time cap (min, 0 = aucun)',min:0,max:99,step:1,def:0}, PREP]},
-    amrap:   {label:'AMRAP', fields:[{k:'min',label:'Durée (min)',min:1,max:99,step:1,def:12}, PREP]},
-    emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:10,max:600,step:10,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
+    amrap:   {label:'AMRAP', fields:[{k:'dur',label:'Durée',min:15,max:5940,step:15,def:720,unit:'s'}, PREP]},
+    emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:15,max:600,step:15,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
     tabata:  {label:'TABATA', fields:[{k:'work',label:'Travail',min:5,max:600,step:5,def:20,unit:'s'},{k:'rest',label:'Repos',min:0,max:600,step:5,def:10,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:8}, PREP]},
   };
   const ORDER = ['clock','fortime','amrap','emom','tabata'];
@@ -209,7 +209,7 @@
     const c = cfg[S.mode], segs = [];
     if (c.prep > 0) segs.push({type:'prep', dur:c.prep*1000, dir:'down'});
     if (S.mode==='fortime') segs.push({type:'work', dur: c.cap>0 ? c.cap*60000 : Infinity, dir:'up'});
-    if (S.mode==='amrap')   segs.push({type:'work', dur: c.min*60000, dir:'down'});
+    if (S.mode==='amrap')   segs.push({type:'work', dur: c.dur*1000, dir:'down'});
     if (S.mode==='emom')    for (let r=1;r<=c.rounds;r++) segs.push({type:'work', dur:c.every*1000, dir:'down', round:r});
     if (S.mode==='tabata')  for (let r=1;r<=c.rounds;r++){ segs.push({type:'work', dur:c.work*1000, dir:'down', round:r}); if (c.rest>0 && r<c.rounds) segs.push({type:'rest', dur:c.rest*1000, dir:'down', round:r}); }
     return segs;
@@ -343,7 +343,7 @@
       row.innerHTML = `<label>${f.label}</label><div class="stepper"><button aria-label="moins">−</button><span class="val"></span><button aria-label="plus">+</button></div>`;
       const [minus, plus] = row.querySelectorAll('button'), val = row.querySelector('.val');
       const paint = () => val.textContent = fmtVal(f, cfg[S.mode][f.k]);
-      const change = d => { const n = Math.min(f.max, Math.max(f.min, cfg[S.mode][f.k] + d*f.step)); cfg[S.mode][f.k] = n; paint(); persist(); render(); };
+      const change = d => { const n = Math.min(f.max, Math.max(f.min, Math.round((cfg[S.mode][f.k] + d*f.step)/f.step)*f.step)); cfg[S.mode][f.k] = n; paint(); persist(); render(); };
       let rep;
       const hold = (d) => { change(d); let delay = 400; const go = () => { rep = setTimeout(() => { change(d); delay = Math.max(60, delay*0.75); go(); }, delay); }; go(); };
       const stop = () => clearTimeout(rep);

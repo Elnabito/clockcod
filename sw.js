@@ -1,6 +1,6 @@
 // Service worker Clockcod : met l'appli en cache pour qu'elle marche hors ligne.
 // Changer VERSION (deploy.sh le fait) force les téléphones à télécharger la nouvelle version.
-const VERSION = 'clockcod-v1';
+const VERSION = 'clockcod-v2';
 const ASSETS = [
   './',
   './index.html',
