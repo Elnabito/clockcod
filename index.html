@@ -11,7 +11,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   :root{
     --red:#ff2414; --red-off:#2a0705; --red-glow:rgba(255,40,20,.85);
@@ -81,6 +81,52 @@
     body.clock{--dw:min(13.2vw, 52vh)}
     #settings{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
   }
+
+  /* ---------- Pomodoro : interface douce ---------- */
+  #pomo{display:none}
+  #skipBtn{display:none}
+  body.pomo{
+    --focus:#f3a28f; --focus-soft:rgba(243,162,143,.16);
+    --break:#9ccfb2; --break-soft:rgba(156,207,178,.16);
+    --accent:var(--focus); --accent-soft:var(--focus-soft);
+    --rs:min(62vw, 36vh);
+    background:radial-gradient(ellipse at 50% 30%,#2b2636 0%,#1b1822 60%,#141218 100%);
+    color:#ebe6f2;font-family:'Quicksand',system-ui,sans-serif;
+  }
+  body.pomo.break{--accent:var(--break); --accent-soft:var(--break-soft)}
+  body.pomo.started{--rs:min(82vw, 60vh)}
+  body.pomo .housing{display:none}
+  body.pomo #pomo{display:flex;position:relative;width:var(--rs);height:var(--rs);align-items:center;justify-content:center}
+  #pomo .ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+  #pomo .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:6}
+  #pomo .prog{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .4s linear, stroke .8s ease;filter:drop-shadow(0 0 6px var(--accent-soft))}
+  #pomo .halo{position:absolute;inset:12%;border-radius:50%;background:radial-gradient(circle,var(--accent-soft) 0%,transparent 70%);transition:background .8s ease}
+  #pomo .pinfo{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:calc(var(--rs)*.03)}
+  #pPhase{font-size:calc(var(--rs)*.075);font-weight:500;color:var(--accent);letter-spacing:.06em;transition:color .8s ease}
+  #pTime{font-size:calc(var(--rs)*.23);font-weight:500;line-height:1;font-variant-numeric:tabular-nums;color:#f4f0f8}
+  #pDots{display:flex;gap:calc(var(--rs)*.022);min-height:calc(var(--rs)*.035)}
+  #pDots i{width:calc(var(--rs)*.032);height:calc(var(--rs)*.032);border-radius:50%;background:rgba(255,255,255,.14);transition:background .6s}
+  #pDots i.done{background:var(--focus)}
+  #pDots i.cur{background:transparent;box-shadow:inset 0 0 0 2px var(--focus)}
+  #pomo.paused #pTime{animation:breathe 2.4s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.35}}
+  body.pomo #hint{color:#9a93a8;font-size:14px}
+
+  body.pomo .tab{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:#9a93a8;border-radius:999px}
+  body.pomo .tab.active{color:#f4f0f8;background:var(--focus-soft);border-color:rgba(243,162,143,.45);box-shadow:none}
+  body.pomo .field{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:18px}
+  body.pomo .field label{color:#b5aec2;font-size:14px}
+  body.pomo .stepper button{border-radius:50%;border:none;background:rgba(255,255,255,.07);color:#ebe6f2}
+  body.pomo .stepper button:active{background:var(--focus-soft)}
+  body.pomo .stepper .val{color:var(--focus);text-shadow:none;font-weight:600}
+  body.pomo .btn{border-radius:999px;border:none;background:rgba(255,255,255,.07);color:#ebe6f2;letter-spacing:.04em;font-weight:500}
+  body.pomo #startBtn{background:var(--accent);color:#231d2a;font-weight:600;transition:background .8s ease}
+  body.pomo #startBtn.pause{background:rgba(255,255,255,.1);color:#ebe6f2}
+  body.pomo.started:not(.finished) #skipBtn{display:block;flex:1}
+  @media (orientation:landscape) and (max-height:500px){
+    body.pomo{--rs:min(40vw, 46vh)}
+    body.pomo.started{--rs:min(60vw, 72vh)}
+  }
 </style>
 </head>
 <body>
@@ -93,12 +139,25 @@
       <div class="screen" id="screen"></div>
       <div class="brand">CLOCKCOD</div>
     </div>
+    <div id="pomo">
+      <div class="halo"></div>
+      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="track" cx="100" cy="100" r="92"/>
+        <circle class="prog" id="pProg" cx="100" cy="100" r="92"/>
+      </svg>
+      <div class="pinfo">
+        <div id="pPhase">Focus</div>
+        <div id="pTime">25:00</div>
+        <div id="pDots"></div>
+      </div>
+    </div>
   </main>
   <div id="hint"></div>
   <section id="settings"></section>
   <footer id="controls">
     <button class="btn" id="minusBtn">−1 RND</button>
     <button class="btn" id="startBtn">START</button>
+    <button class="btn" id="skipBtn">PASSER ⏭</button>
     <button class="btn" id="resetBtn">RESET</button>
     <button class="btn icon" id="soundBtn" title="Son">🔊</button>
     <button class="btn icon" id="fsBtn" title="Plein écran">⛶</button>
@@ -115,8 +174,9 @@
     amrap:   {label:'AMRAP', fields:[{k:'dur',label:'Durée',min:10,max:5940,step:10,def:720,unit:'s'}, PREP]},
     emom:    {label:'EMOM', fields:[{k:'every',label:'Toutes les',min:10,max:600,step:10,def:60,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:10}, PREP]},
     tabata:  {label:'TABATA', fields:[{k:'work',label:'Travail',min:5,max:600,step:5,def:20,unit:'s'},{k:'rest',label:'Repos',min:0,max:600,step:5,def:10,unit:'s'},{k:'rounds',label:'Rounds',min:1,max:99,step:1,def:8}, PREP]},
+    pomo:    {label:'POMODORO', fields:[{k:'focus',label:'Focus',min:60,max:5940,step:60,def:1500,unit:'s'},{k:'short',label:'Pause courte',min:60,max:1800,step:60,def:300,unit:'s'},{k:'long',label:'Pause longue',min:60,max:3600,step:60,def:900,unit:'s'},{k:'rounds',label:'Pomodoros',min:1,max:12,step:1,def:4}]},
   };
-  const ORDER = ['clock','fortime','amrap','emom','tabata'];
+  const ORDER = ['clock','fortime','amrap','emom','tabata','pomo'];
 
   const store = {
     get(){ try{ return JSON.parse(localStorage.getItem('clockcod')||'{}'); }catch(e){ return {}; } },
@@ -198,6 +258,25 @@
   const beepEnd   = () => { tone(1320,.3,0); tone(1320,.3,.45); tone(1320,1.0,.9); };
   const click     = () => tone(1760, .04, 0, .25);
 
+  // Carillons doux (Pomodoro) : sinusoïdes, attaque lente, longue extinction
+  function bell(f, when=0, dur=1.8, vol=0.16){
+    if (!ac || !S.sound) return;
+    try{
+      const t0 = ac.currentTime + when;
+      for (const [mult, v] of [[1, vol], [2, vol*0.18], [3, vol*0.05]]){
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'sine'; o.frequency.value = f*mult;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(v, t0+0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+        o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0+dur+0.05);
+      }
+    }catch(e){}
+  }
+  const chimeFocus = () => { bell(523.25, 0); bell(659.25, .32); };                     // do → mi
+  const chimeBreak = () => { bell(783.99, 0); bell(659.25, .34); bell(523.25, .68, 2.4); }; // sol → mi → do
+  const chimeEnd   = () => { bell(523.25, 0); bell(659.25, .4); bell(783.99, .8); bell(1046.5, 1.2, 3); };
+
   // ---------- Wake lock ----------
   let wl = null;
   async function lockScreen(){ try{ if ('wakeLock' in navigator) wl = await navigator.wakeLock.request('screen'); }catch(e){} }
@@ -212,6 +291,11 @@
     if (S.mode==='amrap')   segs.push({type:'work', dur: c.dur*1000, dir:'down'});
     if (S.mode==='emom')    for (let r=1;r<=c.rounds;r++) segs.push({type:'work', dur:c.every*1000, dir:'down', round:r});
     if (S.mode==='tabata')  for (let r=1;r<=c.rounds;r++){ segs.push({type:'work', dur:c.work*1000, dir:'down', round:r}); if (c.rest>0 && r<c.rounds) segs.push({type:'rest', dur:c.rest*1000, dir:'down', round:r}); }
+    if (S.mode==='pomo')    for (let r=1;r<=c.rounds;r++){
+      segs.push({type:'work', dur:c.focus*1000, dir:'down', round:r});
+      if (r%4===0) segs.push({type:'rest', long:true, dur:c.long*1000, dir:'down', round:r});   // pause longue tous les 4
+      else if (r<c.rounds) segs.push({type:'rest', dur:c.short*1000, dir:'down', round:r});
+    }
     return segs;
   }
   function viewAt(el){
@@ -225,9 +309,42 @@
   const lbl = document.getElementById('lbl'), status = document.getElementById('status'), hint = document.getElementById('hint');
   const startBtn = document.getElementById('startBtn');
 
+  const pomoEl = document.getElementById('pomo'), pPhase = document.getElementById('pPhase'), pTime = document.getElementById('pTime');
+  const pDots = document.getElementById('pDots'), pProg = document.getElementById('pProg');
+  const CIRC = 2*Math.PI*92;
+  pProg.style.strokeDasharray = CIRC;
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+  function renderPomo(){
+    let v;
+    if (!S.started){ const segs = buildSegs(); v = {i:0, s:segs[0], t:0}; }
+    else v = viewAt(S.elapsed);
+    const c = cfg.pomo, secs = secsOf(v);
+    const isBreak = v.s.type==='rest' && !S.finished;
+    document.body.classList.toggle('break', isBreak);
+    pTime.textContent = p2(Math.min(99, Math.floor(secs/60))) + ':' + p2(secs%60);
+    pPhase.textContent = S.finished ? 'Terminé, bravo 🌿' : v.s.type==='work' ? 'Focus' : v.s.long ? 'Pause longue' : 'Pause';
+    const frac = S.finished ? 0 : Math.max(0, Math.min(1, (v.s.dur - v.t)/v.s.dur));
+    pProg.style.strokeDashoffset = CIRC*(1-frac);
+    pomoEl.classList.toggle('paused', S.started && !S.running && !S.finished);
+    // pastilles : une par pomodoro (pleine = fait, cerclée = en cours)
+    const r = v.s.round || 1, doneUpTo = S.finished ? c.rounds : (v.s.type==='work' ? r-1 : r);
+    if (pDots.childElementCount !== c.rounds){ pDots.innerHTML = ''; for (let i=0;i<c.rounds;i++) pDots.appendChild(document.createElement('i')); }
+    [...pDots.children].forEach((d,i) => { d.classList.toggle('done', i<doneUpTo); d.classList.toggle('cur', S.started && !S.finished && v.s.type==='work' && i===r-1); });
+    hint.textContent = !S.started ? `Pause longue après chaque série de 4 · ${c.rounds} pomodoro${c.rounds>1?'s':''}` : (S.started && !S.running && !S.finished) ? 'En pause' : '';
+    startBtn.textContent = !S.started ? 'COMMENCER' : S.finished ? 'NOUVEAU' : S.running ? 'PAUSE' : 'REPRENDRE';
+    startBtn.classList.toggle('pause', S.started && S.running);
+  }
+
   function render(){
+    const pomo = S.mode==='pomo';
+    document.body.classList.toggle('pomo', pomo);
+    document.body.classList.toggle('finished', S.finished);
+    if (themeMeta) themeMeta.content = pomo ? '#1b1822' : '#000000';
     document.body.classList.toggle('clock', S.mode==='clock');
     document.body.classList.toggle('started', S.started);
+    if (pomo){ document.body.classList.remove('counting'); renderPomo(); return; }
+    document.body.classList.remove('break');
     document.body.classList.toggle('counting', S.started && (S.mode==='amrap' || S.mode==='fortime'));
     if (S.mode==='clock'){
       const d = new Date();
@@ -272,9 +389,10 @@
       else {
         if (v.i !== S.lastSeg){
           S.lastSeg = v.i; S.lastBeepSec = null;
-          if (v.s.type==='work') beepGo(); else if (v.s.type==='rest') beepRest();
+          if (S.mode==='pomo'){ if (v.s.type==='work') chimeFocus(); else chimeBreak(); }
+          else if (v.s.type==='work') beepGo(); else if (v.s.type==='rest') beepRest();
         }
-        if (v.s.dir==='down'){
+        if (v.s.dir==='down' && S.mode!=='pomo'){
           const secs = secsOf(v);
           if (secs>=1 && secs<=3 && S.lastBeepSec!==secs && (v.s.dur - v.t) < secs*1000){ S.lastBeepSec = secs; beepShort(); }
         }
@@ -287,7 +405,7 @@
   function finish(){
     const total = S.segs.reduce((a,s)=>a+s.dur,0);
     if (isFinite(total)) S.elapsed = total;
-    S.running = false; S.finished = true; beepEnd(); unlockScreen();
+    S.running = false; S.finished = true; (S.mode==='pomo' ? chimeEnd : beepEnd)(); unlockScreen();
   }
   function reset(){ S.started=false; S.running=false; S.finished=false; S.elapsed=0; S.lastSeg=-1; S.lastBeepSec=null; S.rounds=0; unlockScreen(); render(); }
 
@@ -306,6 +424,17 @@
     render();
   });
   document.getElementById('resetBtn').addEventListener('click', reset);
+  // Pomodoro : passer directement à la phase suivante
+  document.getElementById('skipBtn').addEventListener('click', () => {
+    if (!S.started || S.finished) return;
+    ensureAudio();
+    const v = viewAt(S.elapsed);
+    let acc = 0; for (let i=0;i<=v.i;i++) acc += S.segs[i].dur;
+    S.elapsed = acc; S.lastTs = performance.now();
+    if (v.i >= S.segs.length-1) finish();
+    else if (!S.running){ S.running = true; lockScreen(); }
+    tick();
+  });
   document.getElementById('minusBtn').addEventListener('click', () => { if (S.rounds>0){ S.rounds--; click(); render(); } });
   screen.addEventListener('click', () => {
     ensureAudio();

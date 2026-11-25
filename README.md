@@ -1,6 +1,8 @@
 # Clockcod – WOD Timer
 
-Timer de WOD façon afficheur LED de box : **Horloge, For Time, AMRAP, EMOM, Tabata**.
+Timer de WOD façon afficheur LED de box : **Horloge, For Time, AMRAP, EMOM, Tabata**,
+plus un mode **Pomodoro** à l'interface douce (anneau de progression, carillons légers,
+pause longue après chaque série de 4, bouton « Passer »).
 Application web installable (PWA) qui fonctionne hors ligne.
 
 Site : https://elnabito.github.io/clockcod/
